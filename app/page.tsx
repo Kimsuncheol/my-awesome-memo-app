@@ -2,12 +2,12 @@
 
 // ... imports
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2, Edit2, Check, X } from "lucide-react"
+import { Plus, Trash2, Edit2, Check, X, Search } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { AuthForm } from "@/components/auth-form"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -29,6 +29,7 @@ export default function MemoApp() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState("")
   const [newContent, setNewContent] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     if (!user) {
@@ -104,6 +105,17 @@ export default function MemoApp() {
     setIsAdding(false)
   }
 
+  const filteredMemos = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return memos
+    }
+    const query = searchQuery.toLowerCase()
+    return memos.filter((memo) => 
+      memo.title.toLowerCase().includes(query) || 
+      memo.content.toLowerCase().includes(query)
+    )
+  }, [memos, searchQuery])
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
@@ -135,6 +147,20 @@ export default function MemoApp() {
             My Memos ✨
           </h1>
           <p className="text-muted-foreground text-lg">Welcome, {user.email}</p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="max-w-md mx-auto mb-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="Search memos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 border-2"
+            />
+          </div>
         </div>
 
         {/* Add Button */}
@@ -187,7 +213,7 @@ export default function MemoApp() {
 
         {/* Memos Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {memos.map((memo) => (
+          {filteredMemos.map((memo) => (
             <Card
               key={memo.id}
               className={`${memo.color} p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 border-2 border-white/50 animate-in fade-in slide-in-from-bottom-4 group`}
@@ -218,10 +244,17 @@ export default function MemoApp() {
           ))}
         </div>
 
-        {memos.length === 0 && (
+        {filteredMemos.length === 0 && memos.length === 0 && (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg mb-4">No memos yet! 📝</p>
             <p className="text-muted-foreground">Start capturing your thoughts above</p>
+          </div>
+        )}
+
+        {filteredMemos.length === 0 && memos.length > 0 && (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground text-lg mb-4">No memos found 🔍</p>
+            <p className="text-muted-foreground">Try a different search term</p>
           </div>
         )}
       </div>
